@@ -6,7 +6,7 @@ export MANIFEST="https://github.com/minimal-manifest-twrp/platform_manifest_twrp
 export BRANCH="twrp-9.0" # the branch of manifest
 
 # about your device
-export DEVICE="iplay_20" # codename used in device tree
+export DEVICE="sp9863a" # codename used in device tree
 export DT_LINK="https://github.com/moli765/android_device_alldocube_iPlay_20-TWRP" # device tree link
 export DT_BRANCH="twrp" # device tree branch
 export VENDOR="alldocube" # device manufacturer or vendor
