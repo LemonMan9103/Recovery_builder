@@ -1,4 +1,5 @@
-name: Build recovery(twrp,shrp,pbrp)
+name: Build recovery (TWRP, SHRP, PBRP)
+
 on:
   workflow_dispatch:
 
@@ -7,44 +8,47 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
-       - name: Init the System
-         uses: actions/checkout@master
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-       - name: remove pkg and setting repo
-         run: |
-            sudo apt update && sudo apt install wget zip
-            wget -qO - https://github.com/SA-17/Recovery_builder/raw/main/scripts/cleanup.sh  | bash
-            sudo -E apt-get -qq update
-            sudo -E apt-get -qq install bc build-essential tar zip curl libstdc++6 git wget python gcc clang libssl-dev repo rsync flex curl  bison aria2
-            sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
-            sudo chmod a+rx /usr/local/bin/repo
+      - name: Initialize the System
+        run: |
+          sudo apt update && sudo apt install -y wget zip
+          wget -qO - https://github.com/SA-17/Recovery_builder/raw/main/scripts/cleanup.sh | bash
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y bc build-essential tar zip curl libstdc++6 git wget python gcc clang libssl-dev repo rsync flex curl bison aria2
+          sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
+          sudo chmod a+rx /usr/local/bin/repo
 
-       - name: Adding and Sync source
-         run: |
-             source config.sh
-             mkdir work
-             cd work
-             repo init -u $MANIFEST -b $BRANCH --depth=1
-             repo sync -c -j`nproc` --force-sync --no-clone-bundle --no-tags
-             git clone $DT_LINK -b $DT_BRANCH device/$VENDOR/$DEVICE
+      - name: Adding and Syncing source
+        run: |
+          source config.sh
+          mkdir -p work
+          cd work
+          repo init -u $MANIFEST -b $BRANCH --depth=1
+          repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
+          git clone $DT_LINK -b $DT_BRANCH device/$VENDOR/$DEVICE
 
-       - name: Build recovery
-         run: |
-              source config.sh
-              cd work
-              . build/envsetup.sh && lunch $TYPE$SYM$DEVICE-eng && export ALLOW_MISSING_DEPENDENCIES=true && mka $TARGET -j`nproc`
+      - name: Build recovery
+        run: |
+          source config.sh
+          cd work
+          . build/envsetup.sh
+          lunch $TYPE$SYM$DEVICE-eng
+          export ALLOW_MISSING_DEPENDENCIES=true
+          mka $TARGET -j$(nproc)
 
-       - name: Making file
-         run: |
-              source config.sh
-              cd work
-              wget -qO - https://github.com/SA-17/Recovery_builder/raw/main/scripts/bake.sh  | bash
+      - name: Create zip file
+        run: |
+          source config.sh
+          cd work
+          wget -qO - https://github.com/SA-17/Recovery_builder/raw/main/scripts/bake.sh | bash
 
-       - name: Release recovery
-         uses: softprops/action-gh-release@v1
-         env:
+      - name: Release recovery
+        uses: softprops/action-gh-release@v1
+        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-         with:
+        with:
           tag_name: ${{ github.run_id }}
           name: recovery image
           files: work/recovery.zip
